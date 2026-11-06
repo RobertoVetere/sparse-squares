@@ -17,3 +17,6 @@
 | H8 | Semillas **racionales** con exponente < 0,8155 (récord entero). | Todas las soluciones aisladas, n ≤ 16: solo Verdenius n = 8 es racional. | Negativo. |
 | H9 | Curva n = 18, m = 15 (exp 0,81137): puntos racionales vía barrido en ρ ∈ ℚ. | ~20 valores de ρ: 70–78 soluciones complejas, ~20 reales cada uno, ninguna racional (los "candidatos" eran falsos positivos de tolerancia). | Negativo (búsqueda limitada). |
 | H10 | ¿Puede este marco llegar a 1/2 (objetivo de Epoch)? | Argumento de conteo heurístico: no; óptimo ≈ 0,77. | Haría falta otra idea (README §5). |
+| H11 | Semillas racionales conocidas (V8, A6, CD12 con α ∈ {−110, −253, 15625}) con base solapada. | Mejor V8 a m=9 (0,8155); con solapamiento ninguna mejora: A6 0,847, CD12 0,850. | Negativo. |
+| H12 | Racionalidad de todas las soluciones aisladas para n = 19 y n = 20 (patrones de 0,7925 y 0,7755). | 894 + 521 soluciones complejas, 0 racionales. | Negativo. |
+| H13 | Haz racional: P = A(x)·(v + u x^k) con u/v raíz racional de una condición de cancelación, 4 rondas, ancho 40, grado ≤ 40. | ~16 000 candidatos; mejor 0,850 (es CD12); empeora con la profundidad. | Negativo. |
