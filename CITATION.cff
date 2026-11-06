@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below. Draft, not yet peer reviewed."
+title: "sparse-squares: complete polynomials with sparse squares via overlapping towers"
+authors:
+  - family-names: Vetere
+    given-names: Roberto
+repository-code: "https://github.com/RobertoVetere/sparse-squares"
+date-released: 2026-11-06
+abstract: "Computational attack on the Rényi–Erdős sparse-square problem. Claims an improvement of Verdenius' 1949 real exponent for complete polynomials from log 8/log 13 to log 9/log 17, with interval-arithmetic certificates. The work was carried out with an AI assistant (Claude, Anthropic)."
+keywords: [sparse polynomials, lacunary polynomials, Erdős problem 485, Verdenius, interval arithmetic]

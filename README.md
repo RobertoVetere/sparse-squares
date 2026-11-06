@@ -1,125 +1,130 @@
 # sparse-squares
 
-Ataque computacional al problema abierto de Epoch AI *"Dense Polynomials Whose Squares Are Sparse"*
-(FrontierMath: Open Problems): hallar un polinomio **denso** p (todos los coeficientes enteros no nulos,
-grado n) con |p²| < √n términos.
+**Dense polynomials whose squares are sparse.** This repository is a computational attack on the Rényi–Erdős
+problem of how few terms the square of a polynomial with many terms can have (Erdős Problem
+[#485](https://www.erdosproblems.com/485); Epoch AI, *FrontierMath: Open Problems*,
+["Dense Polynomials Whose Squares Are Sparse"](https://epoch.ai/frontiermath/open-problems/polynomial-square-few-coefficients)).
 
-**Resumen honesto**
+*Versión en español: [README.es.md](README.es.md).*
 
-| Pregunta | Estado |
+> **Status (November 2026): draft, not yet reviewed by an expert.**
+> The main claim below has been machine-checked (interval-arithmetic certificate and independent
+> recomputation), and the proof is written out in [`note/note.pdf`](note/note.pdf). Corrections are very welcome.
+
+## TL;DR
+
+| Question | Status |
 |---|---|
-| Problema de Epoch (entero, denso, \|p²\| < √n) | **No resuelto.** No hay candidato. Argumento heurístico de por qué este método no llega a 1/2 (§5). |
-| Récord **entero/racional** (Verdenius 1949: exponente log 6/log 9 ≈ 0,8155) | **No mejorado.** Reproducido exactamente; búsqueda de semillas racionales negativa (§4). |
-| Récord **real** para polinomios completos (Verdenius 1949: log 8/log 13 ≈ 0,81071) | **Mejorado a log 9/log 17 ≈ 0,77552**, con semilla real certificada por aritmética de intervalos y prueba de densidad (§2–3). *Pendiente de revisión por expertos.* |
+| **Epoch target:** an integer, dense p of degree n with \|p²\| < √n (exponent < 1/2) | **Not solved.** No candidate. A heuristic argument (below) suggests the methods here stall near 0.77. |
+| **Integer/rational record:** Verdenius 1949, exponent log 6/log 9 ≈ 0.8155 | **Not improved.** Reproduced exactly; all searches for better rational seeds were negative. |
+| **Real record for complete polynomials:** Verdenius 1949, exponent log 8/log 13 ≈ 0.81071 | **Improved to log 9/log 17 ≈ 0.77552** (claimed; see the theorem and caveats below). |
 
----
+Notation: ‖f‖ is the number of nonzero coefficients. Q̂(k) = min ‖f²‖ over real polynomials f of degree k−1 with all k coefficients nonzero ("complete" or "dense" polynomials).
 
-## 1. El mecanismo (Verdenius, reconstruido)
+## Main result (claimed)
 
-Sea p denso de grado n y S = supp(p²) ⊂ [0, 2n]. Para una base m, la "torre"
+**Theorem.** For every K ≥ 1 there is a real polynomial of degree D_K = 20(17^K − 1)/16 with all D_K + 1
+coefficients nonzero whose square has at most 21·9^(K−1) nonzero coefficients. Consequently
 
-  P_K(x) = p(x) · p(x^m) · p(x^{m²}) ··· p(x^{m^{K−1}})
+  Q̂(k) ≤ (21/9) · k^(log 9 / log 17) ≈ 2.33 · k^0.77552,  for k = D_K + 1.
 
-cumple P_K² = ∏ p²(x^{m^j}), así que **supp(P_K²) ⊆ { Σ s_j m^j : s_j ∈ S }**. Con acarreos, ese conjunto
-crece como λ^K con λ ≪ |S|. λ se calcula exactamente con un autómata de acarreos (`src/digits.py`,
-`src/digits2.py`, contrastado con fuerza bruta). Con m = n+1 (sin solapamiento) P_K es denso trivialmente y
-el exponente es log λ / log(n+1).
+Verdenius' 1949 exponent is log 8/log 13 ≈ 0.81071. As far as we can tell from the literature (Schinzel–Zannier
+2009, Mantova 2016, the #485 thread in 2026), it had not been improved.
 
-Para que p² tenga muchos ceros con pocos grados de libertad se usa un **ansatz simétrico**:
-x^n p(1/x) = C·p(ρx), con p ≡ √(parte baja de p²) mod x^{…}. Un patrón de soporte es "resoluble
-genéricamente" cuando el sistema simétrico es cuadrado.
+### Caveats
 
-* Exhaustivo para n ≤ 20 con m = n+1 (`src/enum_sym.py`): el óptimo es **exactamente Verdenius** — n = 8
-  (λ = 6, racional) y n = 12 (λ = 8, real). En esa familia λ = n/2 + 2, minimizado en n = 12. Esto explica
-  por qué el récord no se movió desde 1949 con este método.
-* Semilla entera de Verdenius reproducida: `p = [1,−2,−2,−4,−10,−28,−98,−686,2401]`, |p²| = 9,
-  soporte {0,1,6,…,10,15,16}, λ = 6. Torre densa, conteo exacto = autómata hasta K = 5.
+1. **Real coefficients only.** The seed is irrational. For ℚ[x], which is how #485 is stated and also the setting of the Epoch problem, the best exponent is still Verdenius' log 6/log 9.
+2. **Asymptotic.** The explicit bound 21·9^(K−1) drops below k^0.81071 only from K = 7, which is about 5·10⁸ terms.
+3. **Along a sequence of k.** This is the same form as Verdenius' statement. Extending it to all k should follow from Erdős' 1949 interpolation argument, but that is not written out here.
+4. **No expert review yet.**
 
-## 2. Resultado nuevo: base solapada m < n+1 (exponente real 0,77552)
+## How it works
 
-**Familia de tres bloques.** Para r par, n = 3r + 2, m = n − r/2, el patrón
+**1. Towers and carries (Verdenius' mechanism, reconstructed).** If p has degree n and S = supp(p²), then
+P_K(x) = ∏_{j<K} p(x^{m^j}) satisfies supp(P_K²) ⊆ {Σ s_j m^j : s_j ∈ S}. Because of carries, this set grows like
+λ^K with λ much smaller than |S|. We compute λ exactly with a carry automaton (`src/digits.py`, `src/digits2.py`,
+cross-checked against brute force).
 
-  S = [0, r] ∪ [m, m+r] ∪ [2m, 2m+r]
+With m = n + 1, P_K is automatically dense. An exhaustive search over symmetric zero patterns for n ≤ 20
+returns **exactly Verdenius' seeds**:
+- n = 8, rational, λ = 6, p = [1, −2, −2, −4, −10, −28, −98, −686, 2401];
+- n = 12, real, λ = 8.
 
-da un sistema simétrico cuadrado. Los dígitos son (bloque bajo + acarreo ∈ {0,1,2}) < m, sin acarreos
-posteriores, así que **|supp P_K²| ≤ (r+1)·(r+3)^{K−1}·3**, de forma exacta y elemental. El exponente es
-log(r+3)/log(m). El óptimo está en r = 6: **n = 20, m = 17, λ = 9**. Un recocido sobre todos los patrones
-simétricos con n ≤ 32 y todas las bases converge siempre a esta familia (`src/anneal_overlap.py`).
+That family has λ = n/2 + 2, which is optimal at n = 12. This explains why the record stood.
 
-**Semilla** (`seeds/seed_n20_m17.json`): p de grado 20 con coeficientes reales, palindrómico
-(a_{20−i} = a_i), p² con exactamente 21 términos, soporte [0,6] ∪ [17,23] ∪ [34,40]. Es una de las 42
-soluciones reales densas que da la homotopía de grado total (`src/homotopy.py`).
+**2. Overlapping bases.** Take m < n + 1. The best family has three blocks:
 
-### Teorema (demostrado salvo error; ver §3 para lo verificado por ordenador)
+  S = [0, r] ∪ [m, m+r] ∪ [2m, 2m+r],  n = 3r + 2,  m = n − r/2,
 
-Existe p ∈ ℝ[x] denso de grado 20 con supp(p²) = [0,6] ∪ [17,23] ∪ [34,40]. Para todo K ≥ 1 existe un
-polinomio real **completo** (denso) de grado D_K = 20(17^K − 1)/16 cuyo cuadrado tiene **como mucho
-21·9^{K−1}** términos. En consecuencia, Q̂(k) ≪ k^{log 9/log 17} ≈ k^{0,77552} a lo largo de esa sucesión,
-frente a k^{0,81071} de Verdenius (1949). La ventaja numérica empieza en K = 7 (≈ 5·10⁸ términos).
+which gives λ = r + 3 with no further carries. The optimum is at r = 6: **n = 20, m = 17, λ = 9**. Annealing over all symmetric patterns with n ≤ 32 and all bases always lands in this family.
 
-**Prueba.**
-1. *Existencia de p:* certificado de Krawczyk (abajo). Los ceros de p² fuera de S son exactos por construcción.
-2. *Cota superior:* supp(P_K²) ⊆ sumas de dígitos; contarlas da 7·9^{K−1}·3.
-3. *Densidad para todo K (lema nuevo):* los a_i son algebraicos no nulos, así que existe un primo ℓ tal que
-   todos son unidades en un primo 𝔭 | ℓ de su cuerpo de números. Reescalando p(x) → p(ℓx) (no cambia el
-   soporte de p²), el coeficiente de x^N en P_K es Σ_reps (∏ a_{i_j}) ℓ^{Σ i_j}, sumando sobre las
-   escrituras N = Σ i_j m^j con 0 ≤ i_j ≤ n. Cada término tiene valoración e·(suma de dígitos).
-   **Lema:** si m − 1 ≤ n < 2m, la escritura de suma de dígitos mínima es única. Prueba: si r ≠ r' son
-   mínimas y j es el primer dígito en que difieren, entonces i_j = i'_j + m. Si algún dígito de r por
-   encima de j es < n, una cadena de acarreos reduce la suma de dígitos en un múltiplo de (m − 1),
-   contradicción. Si todos son n, el valor de r' por encima de j excedería el máximo representable,
-   contradicción. Por tanto hay un único término de valoración mínima y el coeficiente es ≠ 0. ∎
+**3. A real seed exists.** A palindromic p of degree 20 has its zeros on [7, 16] imposed by 10 quadratic equations. Total-degree homotopy finds 259 complex solutions, 42 of them real with all coefficients nonzero. One of them is certified by the **Krawczyk test** in 110-digit interval arithmetic: there is a unique exact solution in a box of radius 10⁻⁶⁰, all coefficients are nonzero, and supp(p²) = S exactly.
 
-(La misma construcción con n = 14, m = 12, r = 4 da log 7/log 12 ≈ 0,78309; también certificada.)
+**4. The tower stays dense for every K.** With overlapping bases, cancellations are possible a priori. The proof:
+- Choose a prime ℓ at which all coefficients of p are units, and replace p(x) by p(ℓx).
+- Each representation N = Σ i_j m^j with digits 0 ≤ i_j ≤ n then contributes a term of ℓ-adic valuation proportional to Σ i_j.
+- **Lemma:** if m − 1 ≤ n < 2m, the representation with minimal digit sum is unique. The proof is a carry-chain argument.
+- So exactly one term has minimal valuation, and every coefficient is nonzero.
 
-**Advertencias:** (i) es una mejora para coeficientes **reales**; con coeficientes racionales o enteros
-(el marco de Epoch y de Erdős #485 en ℚ[x]) **no hay mejora**. (ii) Es una cota a lo largo de una
-sucesión, como la de Verdenius; la extensión a todo k usaría el argumento de interpolación de Erdős
-(1949), que no he formalizado. (iii) No es revisión por pares: conviene que un especialista revise el
-lema de densidad y el certificado.
+## Verification (independent of the search code)
 
-## 3. Verificación (programas independientes del buscador)
+| Check | Script | Output |
+|---|---|---|
+| Exact integer check of the Epoch criterion | `verify.py` | `results/verify_*.txt` |
+| Krawczyk certificate for the seeds n = 14 (m = 12) and n = 20 (m = 17) | `certify/krawczyk.py` | `results/krawczyk_*.json` (all `true`) |
+| Tower check: re-derives the seed, counts digit sums by direct enumeration (21·9^(K−1) up to K = 6), and computes P₂² directly (dense, ‖P₂²‖ = 189) | `certify/tower_check.py` | `results/tower_check.txt` |
+| Brute-force check of the unique-minimal-digit-sum lemma (K ≤ 4) | `src/minds.py` | `results/unique_min_digitsum_check.txt` |
 
-* `certify/krawczyk.py`: aritmética de intervalos (mpmath.iv, 110 dígitos). Test de Krawczyk sobre el
-  sistema simétrico: **solución exacta única** en una caja de radio 10⁻⁶⁰. Además comprueba que todos los
-  a_i son ≠ 0 y que [x^j]p² ≠ 0 en S. Salidas: `results/krawczyk_*.json` (todo `true` para n = 14 y n = 20).
-* `certify/tower_check.py`: no importa `src/`. Re-deriva la semilla, cuenta las sumas de dígitos por
-  enumeración directa (189, 1701, …, 1 240 029 = 21·9^{K−1} hasta K = 6) y calcula P_K² en alta precisión:
-  K = 2 denso, |P_2²| = 189 = cota. Ver `results/tower_check.txt`.
-* `src/minds.py`: comprobación por fuerza bruta del lema de unicidad (K ≤ 4); el lema está demostrado arriba.
-* `verify.py`: verificador exacto con enteros del criterio de Epoch (para entregas en formato JSON).
+### Reproduce
 
-## 4. Intentos negativos (ver `HYPOTHESES.md`)
-
-* Mezclar semillas distintas por nivel: solo promedia los exponentes.
-* Cancelaciones extra de coeficientes en P_K²: no aparecen (el conteo exacto coincide con la cota).
-* Sistemas sobredeterminados ("milagros" tipo Coppersmith–Davenport): ninguna solución no degenerada en
-  los patrones que habrían dado entre 0,747 y 0,796.
-* Semillas racionales: todas las soluciones aisladas (n ≤ 16, exponente < 0,816) calculadas por homotopía.
-  La única racional es la de Verdenius n = 8. En la curva n = 18 (exponente 0,8114, que sí batiría el
-  récord entero) un barrido en ρ racional no encuentra puntos racionales.
-
-## 5. ¿Por qué no se llega a 1/2? (heurístico, no demostrado)
-
-En esta familia, un patrón resoluble necesita |S| ≈ n+1 (conteo de dimensiones). Con S = A + m·E,
-λ ≈ |A + E| ≥ |A| + |E| − 1 y m ≈ 2n/max E. Equilibrar esas restricciones deja el exponente cerca de 0,77,
-lejos de 1/2. Bajar de 1/2 exigiría patrones con |S| ≪ n que sean resolubles: sistemas muy
-sobredeterminados con soluciones, de los que no he encontrado ninguno. O bien una construcción distinta
-de las torres de una sola semilla.
-
-## Estructura
-
-```
-verify.py                 verificador entero independiente (formato Epoch)
-certify/                  certificación rigurosa (Krawczyk) y comprobación independiente de torres
-seeds/                    semillas (JSON); verdenius_integer_n8.json en formato Epoch
-results/                  salidas de las verificaciones
-src/                      código de búsqueda (autómatas, enumeraciones, homotopía, recocido)
-HYPOTHESES.md             registro de hipótesis y resultados
+```bash
+pip install -r requirements.txt
+./reproduce.sh            # a few seconds on a laptop
 ```
 
-Requisitos: Python 3, numpy, scipy, mpmath, python-flint.
+## Negative results
 
-Referencias: Rényi (1947); Erdős, Nieuw Arch. Wisk. 23 (1949); Verdenius, Indag. Math. 11 (1949);
-Coppersmith–Davenport, Acta Arith. 58 (1991); Abbott, Math. Comp. 71 (2002); Schinzel–Zannier (2009);
-Erdős Problem #485 (erdosproblems.com).
+All of these are logged in [HYPOTHESES.md](HYPOTHESES.md):
+- mixing different seeds across levels;
+- extra coefficient cancellations in P_K²;
+- "miracle" solutions of overdetermined symmetric systems;
+- rational points on all isolated solutions (n ≤ 16, and n = 19, 20);
+- rational beam search over products A(x)·(v + u·x^k), in the style of Coppersmith–Davenport;
+- rational-point sampling on the five relevant curves;
+- a structure-agnostic sparsification optimizer (it does not even rediscover the degree-12 examples).
+
+## Why not exponent 1/2? (heuristic)
+
+A solvable pattern needs |S| ≈ n + 1 by dimension counting. Writing S = A + m·E gives λ ≈ |A + E| ≥ |A| + |E| − 1
+and m ≲ 2n / max E. Balancing these leaves the exponent near 0.77. Going below 1/2 would need patterns with
+|S| ≪ n that are still solvable, i.e. a new source of "free" cancellations of the kind Coppersmith–Davenport
+exploited at degree 12, or a construction that is not a single-seed tower.
+
+## Repository layout
+
+```
+README.md / README.es.md   this file (English / Spanish)
+HYPOTHESES.md              log of every hypothesis tried, with outcome (Spanish original: HYPOTHESES.es.md)
+note/                      technical note (LaTeX + PDF) with full proofs
+verify.py                  independent exact integer verifier (Epoch JSON format)
+certify/                   interval-arithmetic certificate and independent tower check
+seeds/                     seeds as JSON (verdenius_integer_n8.json is in Epoch format)
+results/                   outputs of all verification runs
+src/                       search code; see src/README.md for an index
+reproduce.sh               re-runs all verifications
+```
+
+## References
+
+- A. Rényi, *On the minimal number of terms of the square of a polynomial*, Hungarica Acta Math. 1 (1947).
+- P. Erdős, *On the number of terms of the square of a polynomial*, Nieuw Arch. Wisk. 23 (1949).
+- W. Verdenius, *On the number of terms of the square and the cube of polynomials*, Indag. Math. 11 (1949).
+- D. Coppersmith, J. Davenport, *Polynomials whose powers are sparse*, Acta Arith. 58 (1991).
+- J. Abbott, *Sparse squares of polynomials*, Math. Comp. 71 (2002).
+- A. Schinzel, Acta Arith. 49 (1987); A. Schinzel, U. Zannier, Rend. Lincei Mat. Appl. 20 (2009).
+- V. Mantova, survey, Riv. Mat. Univ. Parma 7 (2016).
+
+## Authorship and AI disclosure
+
+Directed by Roberto Vetere. The search, the certificates and the drafts were produced with an AI assistant
+(Claude, Anthropic). Every claim marked as verified is machine-checked; the proofs still await human expert review.
