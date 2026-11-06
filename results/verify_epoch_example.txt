@@ -1,0 +1,8 @@
+{
+ "degree": 80,
+ "dense": true,
+ "terms_p": 81,
+ "terms_p2": 57,
+ "sqrt_n": 8.94427190999916,
+ "EPOCH_CRITERION_MET": false
+}

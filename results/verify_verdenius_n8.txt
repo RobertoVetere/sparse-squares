@@ -1,0 +1,14 @@
+{
+ "degree": 8,
+ "dense": true,
+ "terms_p": 9,
+ "terms_p2": 9,
+ "sqrt_n": 2.8284271247461903,
+ "EPOCH_CRITERION_MET": false
+}
+{
+ "terms_p": 9,
+ "terms_p2": 9,
+ "dense": true,
+ "exponent_log_q_over_log_t": 1.0
+}
